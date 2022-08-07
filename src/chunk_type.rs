@@ -1,18 +1,18 @@
-#![allow(dead_code)]
 use std::{fmt, str::FromStr};
 
 use anyhow::{ensure, Ok};
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub struct ChunkType(u32);
 
 impl ChunkType {
-    fn bytes(&self) -> [u8; 4] {
-        let b1: u8 = ((self.0 >> 24) & 0xff) as u8;
-        let b2: u8 = ((self.0 >> 16) & 0xff) as u8;
-        let b3: u8 = ((self.0 >> 8) & 0xff) as u8;
-        let b4: u8 = (self.0 & 0xff) as u8;
-        return [b1, b2, b3, b4];
+    pub fn bytes(&self) -> [u8; 4] {
+        [
+            ((self.0 >> 24) & 0xff) as u8,
+            ((self.0 >> 16) & 0xff) as u8,
+            ((self.0 >> 8) & 0xff) as u8,
+            (self.0 & 0xff) as u8,
+        ]
     }
     fn is_valid(&self) -> bool {
         self.is_reserved_bit_valid()
@@ -29,6 +29,9 @@ impl ChunkType {
     fn is_safe_to_copy(&self) -> bool {
         self.0 & 0x20 != 0 // or self.0 & 0x20 == 0x20
     }
+    pub fn inner(&self) -> u32 {
+        self.0
+    }
 }
 
 impl TryFrom<[u8; 4]> for ChunkType {
@@ -38,6 +41,14 @@ impl TryFrom<[u8; 4]> for ChunkType {
         ensure!(source.into_iter().all(|x| x.is_ascii_alphabetic()));
         let [b1, b2, b3, b4] = source;
         Ok(ChunkType(u32::from_be_bytes([b1, b2, b3, b4])))
+    }
+}
+
+impl TryFrom<&[u8]> for ChunkType {
+    type Error = anyhow::Error;
+
+    fn try_from(source: &[u8]) -> Result<Self, Self::Error> {
+        TryInto::<[u8; 4]>::try_into(source)?.try_into()
     }
 }
 
