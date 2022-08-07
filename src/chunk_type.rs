@@ -4,28 +4,30 @@ use std::{fmt, str::FromStr};
 use anyhow::{ensure, Ok};
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct ChunkType(u8, u8, u8, u8);
-
-static THIRTY_TWO: u8 = 1 << 5;
+pub struct ChunkType(u32);
 
 impl ChunkType {
     fn bytes(&self) -> [u8; 4] {
-        [self.0, self.1, self.2, self.3]
+        let b1: u8 = ((self.0 >> 24) & 0xff) as u8;
+        let b2: u8 = ((self.0 >> 16) & 0xff) as u8;
+        let b3: u8 = ((self.0 >> 8) & 0xff) as u8;
+        let b4: u8 = (self.0 & 0xff) as u8;
+        return [b1, b2, b3, b4];
     }
     fn is_valid(&self) -> bool {
-        self.is_reserved_bit_valid() // self.bytes().into_iter().all(|x| x.is_ascii_alphabetic()) &&
+        self.is_reserved_bit_valid()
     }
     fn is_critical(&self) -> bool {
-        self.0 & THIRTY_TWO == 0
+        self.0 & (0x20 << 24) == 0
     }
     fn is_public(&self) -> bool {
-        self.1 & THIRTY_TWO == 0
+        self.0 & (0x20 << 16) == 0
     }
     fn is_reserved_bit_valid(&self) -> bool {
-        self.2 & THIRTY_TWO == 0
+        self.0 & (0x20 << 8) == 0
     }
     fn is_safe_to_copy(&self) -> bool {
-        self.3 & THIRTY_TWO != 0 // orself.3 == THIRTY_TWO
+        self.0 & 0x20 != 0 // or self.0 & 0x20 == 0x20
     }
 }
 
@@ -34,8 +36,8 @@ impl TryFrom<[u8; 4]> for ChunkType {
 
     fn try_from(source: [u8; 4]) -> Result<Self, Self::Error> {
         ensure!(source.into_iter().all(|x| x.is_ascii_alphabetic()));
-        let [a, b, c, d] = source;
-        Ok(ChunkType(a, b, c, d))
+        let [b1, b2, b3, b4] = source;
+        Ok(ChunkType(u32::from_be_bytes([b1, b2, b3, b4])))
     }
 }
 
@@ -59,11 +61,8 @@ impl FromStr for ChunkType {
 
 impl fmt::Display for ChunkType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}{}{}{}",
-            self.0 as char, self.1 as char, self.2 as char, self.3 as char
-        )
+        let [a, b, c, d] = self.bytes();
+        write!(f, "{}{}{}{}", a as char, b as char, c as char, d as char)
     }
 }
 
