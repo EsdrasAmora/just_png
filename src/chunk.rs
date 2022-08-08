@@ -14,7 +14,7 @@ pub struct Chunk {
 pub const HDLC: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
 impl Chunk {
-    fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
+    pub fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
         let crc = HDLC.checksum(&[&chunk_type.bytes()[..], &data].concat());
         let length = data.len() as u32;
         Chunk {
@@ -27,7 +27,7 @@ impl Chunk {
     fn length(&self) -> u32 {
         self.length
     }
-    fn chunk_type(&self) -> &ChunkType {
+    pub fn chunk_type(&self) -> &ChunkType {
         &self.chunk_type
     }
     fn data(&self) -> &[u8] {
@@ -36,12 +36,12 @@ impl Chunk {
     fn crc(&self) -> u32 {
         self.crc
     }
-    fn data_as_string(&self) -> Result<String, anyhow::Error> {
+    pub fn data_as_string(&self) -> Result<String, anyhow::Error> {
         from_utf8(&self.data)
             .map_err(anyhow::Error::from)
             .map(|x| x.to_owned())
     }
-    fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         self.length
             .to_be_bytes()
             .iter()

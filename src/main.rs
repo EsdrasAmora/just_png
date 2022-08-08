@@ -1,4 +1,3 @@
-#![feature(slice_take)]
 #![allow(dead_code, unused_imports, unused_variables)]
 mod args;
 mod chunk;

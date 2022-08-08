@@ -6,13 +6,11 @@ use anyhow::{ensure, Ok};
 pub struct ChunkType(u32);
 
 impl ChunkType {
+    pub fn new(val: u32) -> Result<ChunkType, anyhow::Error> {
+        val.try_into()
+    }
     pub fn bytes(&self) -> [u8; 4] {
-        [
-            ((self.0 >> 24) & 0xff) as u8,
-            ((self.0 >> 16) & 0xff) as u8,
-            ((self.0 >> 8) & 0xff) as u8,
-            (self.0 & 0xff) as u8,
-        ]
+        self.0.to_be_bytes()
     }
     fn is_valid(&self) -> bool {
         self.is_reserved_bit_valid()
@@ -49,6 +47,22 @@ impl TryFrom<&[u8]> for ChunkType {
 
     fn try_from(source: &[u8]) -> Result<Self, Self::Error> {
         TryInto::<[u8; 4]>::try_into(source)?.try_into()
+    }
+}
+
+impl TryFrom<u32> for ChunkType {
+    type Error = anyhow::Error;
+
+    fn try_from(source: u32) -> Result<Self, Self::Error> {
+        TryInto::<[u8; 4]>::try_into(source.to_be_bytes())?.try_into()
+    }
+}
+
+impl TryFrom<&str> for ChunkType {
+    type Error = anyhow::Error;
+
+    fn try_from(source: &str) -> Result<Self, Self::Error> {
+        TryInto::<[u8; 4]>::try_into(source.as_bytes())?.try_into()
     }
 }
 
