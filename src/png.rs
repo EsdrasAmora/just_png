@@ -2,7 +2,7 @@ use crate::{
     chunk::{self, Chunk},
     chunk_type::ChunkType,
 };
-use anyhow::{bail, ensure, Error};
+use anyhow::{bail, ensure, Context, Error};
 use core::result::Result::{Err, Ok};
 use std::fmt;
 
@@ -50,13 +50,11 @@ impl Png {
     fn as_bytes(&self) -> Vec<u8> {
         let chunk_bytes: Vec<u8> = self.0.iter().flat_map(|chunk| chunk.as_bytes()).collect();
 
-        let header: Vec<u8> = Png::STANDARD_HEADER
+        Png::STANDARD_HEADER
             .iter()
             .chain(chunk_bytes.iter())
             .copied()
-            .collect();
-
-        [header, chunk_bytes].concat()
+            .collect()
     }
 }
 
@@ -64,23 +62,25 @@ impl TryFrom<&[u8]> for Png {
     type Error = anyhow::Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        let aa = TryInto::<[u8; 8]>::try_into(&value[0..8])?;
-        if &aa != Png::STANDARD_HEADER {
+        let header = TryInto::<[u8; 8]>::try_into(&value[0..8])?;
+        if &header != Png::STANDARD_HEADER {
             bail!("aasdasd");
         }
         let mut chunks = vec![];
         let mut i: usize = 8;
         loop {
-            let length = &value[i..(i + 4)];
-            if let Ok(batata) = TryInto::<[u8; 4]>::try_into(length) {
-                let b = u32::from_be_bytes(batata);
-                let end = 12 + b as usize;
-                let chunk = TryInto::<Chunk>::try_into(&value[i..end])?;
-                i += end;
-                chunks.push(chunk);
-            } else {
+            if i >= value.len() {
                 break;
-            };
+            }
+            let length = value.get(i..(i + 4)).context("invalid chunk")?;
+            let length = TryInto::<[u8; 4]>::try_into(length)?;
+            let length = u32::from_be_bytes(length);
+            let end = i + 12 + length as usize;
+
+            let chunk = value.get(i..end).context("invalid chunk")?;
+            let chunk = TryInto::<Chunk>::try_into(chunk)?;
+            chunks.push(chunk);
+            i = end;
         }
 
         Ok(Png(chunks))
@@ -89,6 +89,7 @@ impl TryFrom<&[u8]> for Png {
 
 impl fmt::Display for Png {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO:
         write!(f, "todo")
     }
 }
@@ -98,6 +99,7 @@ mod tests {
     use super::*;
     use crate::chunk::Chunk;
     use crate::chunk_type::ChunkType;
+    use core::panic;
     use std::convert::TryFrom;
     use std::str::FromStr;
 
@@ -235,6 +237,7 @@ mod tests {
         let png = Png::try_from(&PNG_FILE[..]).unwrap();
         let actual = png.as_bytes();
         let expected: Vec<u8> = PNG_FILE.iter().copied().collect();
+        assert_eq!(actual.len(), expected.len());
         assert_eq!(actual, expected);
     }
 
