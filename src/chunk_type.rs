@@ -36,7 +36,11 @@ impl TryFrom<[u8; 4]> for ChunkType {
     type Error = anyhow::Error;
 
     fn try_from(source: [u8; 4]) -> Result<Self, Self::Error> {
-        ensure!(source.into_iter().all(|x| x.is_ascii_alphabetic()));
+        ensure!(
+            source.into_iter().all(|x| x.is_ascii_alphabetic()),
+            "invalid chunk type `{:?}`",
+            source
+        );
         let [b1, b2, b3, b4] = source;
         Ok(ChunkType(u32::from_be_bytes([b1, b2, b3, b4])))
     }

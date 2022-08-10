@@ -57,20 +57,20 @@ impl TryFrom<&[u8]> for Chunk {
     type Error = anyhow::Error;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        ensure!(value.len() >= 12);
+        ensure!(value.len() >= 12, "invalid chunk size `{}`", value.len());
 
-        let length = u32::from_be_bytes(TryInto::<[u8; 4]>::try_into(
-            value.get(0..4).context("outofbounds")?,
-        )?);
+        let length = u32::from_be_bytes(TryInto::<[u8; 4]>::try_into(&value[0..4])?);
 
-        ensure!(length <= 1 << 31);
-        let type_slice = value.get(4..8).context("aff")?;
+        ensure!(length <= 1 << 31, "supplied lenght is grather than 2 ^ 31");
+        ensure!(
+            (length + 12) as usize == value.len(),
+            "segment length mismatch"
+        );
+        let type_slice = &value[4..8];
         let chunk_type = ChunkType::try_from(type_slice)?;
         let last_idx = 8usize + length as usize;
 
-        let data_slice = value
-            .get(8..last_idx)
-            .context("specified data length is out of bounds for given value")?;
+        let data_slice = &value[8..last_idx];
 
         let crc = HDLC.checksum(&[type_slice, data_slice].concat());
         ensure!(crc == u32::from_be_bytes(TryInto::<[u8; 4]>::try_into(&value[last_idx..])?));

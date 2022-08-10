@@ -18,20 +18,16 @@ impl Png {
         self.0.push(chunk);
     }
     fn remove_chunk(&mut self, chunk_type: &str) -> anyhow::Result<Chunk> {
-        let chunk_type = &TryInto::<ChunkType>::try_into(chunk_type)?;
+        let chunk_type = TryInto::<ChunkType>::try_into(chunk_type)?;
 
         let index = self
             .0
             .iter()
             .map(|x| x.chunk_type())
-            .position(|x| x == chunk_type);
+            .position(|x| x == &chunk_type)
+            .context(format!("chunk of type {} not found", chunk_type))?;
 
-        if let Some(x) = index {
-            // Lot of stuff here as well.
-            Ok(self.0.remove(x))
-        } else {
-            bail!("not found")
-        }
+        Ok(self.0.remove(index))
     }
     fn header(&self) -> &[u8; 8] {
         Png::STANDARD_HEADER
@@ -50,11 +46,7 @@ impl Png {
     fn as_bytes(&self) -> Vec<u8> {
         let chunk_bytes: Vec<u8> = self.0.iter().flat_map(|chunk| chunk.as_bytes()).collect();
 
-        Png::STANDARD_HEADER
-            .iter()
-            .chain(chunk_bytes.iter())
-            .copied()
-            .collect()
+        [Png::STANDARD_HEADER.to_vec(), chunk_bytes].concat()
     }
 }
 
@@ -63,15 +55,12 @@ impl TryFrom<&[u8]> for Png {
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
         let header = TryInto::<[u8; 8]>::try_into(&value[0..8])?;
-        if &header != Png::STANDARD_HEADER {
-            bail!("aasdasd");
-        }
+        ensure!(&header == Png::STANDARD_HEADER, "invalid header");
+
         let mut chunks = vec![];
         let mut i: usize = 8;
-        loop {
-            if i >= value.len() {
-                break;
-            }
+
+        while i < value.len() {
             let length = value.get(i..(i + 4)).context("invalid chunk")?;
             let length = TryInto::<[u8; 4]>::try_into(length)?;
             let length = u32::from_be_bytes(length);
@@ -89,8 +78,10 @@ impl TryFrom<&[u8]> for Png {
 
 impl fmt::Display for Png {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO:
-        write!(f, "todo")
+        for el in self.chunks().iter() {
+            write!(f, "{}", el)?;
+        }
+        Ok(())
     }
 }
 
