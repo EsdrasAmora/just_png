@@ -1,6 +1,6 @@
 use clap::{Args, Parser, Subcommand};
 
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub(crate) struct Encode {
     #[clap(value_parser)]
     path: String,
@@ -15,7 +15,7 @@ pub(crate) struct Encode {
     output: Option<String>,
 }
 
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub(crate) struct Decode {
     #[clap(value_parser)]
     path: String,
@@ -24,7 +24,7 @@ pub(crate) struct Decode {
     chunk_type: String,
 }
 
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub(crate) struct Remove {
     #[clap(value_parser)]
     path: String,
@@ -33,7 +33,7 @@ pub(crate) struct Remove {
     chunk_type: String,
 }
 
-#[derive(Args)]
+#[derive(Args, Debug)]
 pub(crate) struct Print {
     #[clap(value_parser)]
     path: String,

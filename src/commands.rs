@@ -32,24 +32,24 @@ enum Commands {
 
 impl Encode {
     fn exec(self) {
-        todo!()
+        println!("you runned the command Encode with args {:?}", self)
     }
 }
 impl Decode {
     fn exec(self) {
-        todo!()
+        println!("you runned the command Decode with args {:?}", self)
     }
 }
 
 impl Remove {
     fn exec(self) {
-        todo!()
+        println!("you runned the command Remove with args {:?}", self)
     }
 }
 
 impl Print {
     fn exec(self) {
-        todo!()
+        println!("you runned the command Print with args {:?}", self)
     }
 }
 
@@ -67,11 +67,3 @@ impl Commands {
 fn handle_path() {
     todo!()
 }
-
-fn main() {
-    let cli = Cli::parse();
-
-    cli.command.delegate();
-}
-
-// fn
