@@ -1,7 +1,7 @@
 use crate::chunk_type::ChunkType;
-use anyhow::{bail, ensure, Context, Ok};
+use anyhow::ensure;
 use crc::{Crc, CRC_32_ISO_HDLC};
-use std::{default, fmt, str::from_utf8};
+use std::{fmt, str::from_utf8};
 
 #[derive(Debug, Default)]
 pub struct Chunk {
@@ -15,7 +15,7 @@ pub const HDLC: Crc<u32> = Crc::<u32>::new(&CRC_32_ISO_HDLC);
 
 impl Chunk {
     pub fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
-        let crc = HDLC.checksum(&[&chunk_type.bytes()[..], &data].concat());
+        let crc = HDLC.checksum(&[&chunk_type.bytes(), &data[..]].concat());
         let length = data.len() as u32;
         Chunk {
             chunk_type,
@@ -42,14 +42,13 @@ impl Chunk {
             .map(|x| x.to_owned())
     }
     pub fn as_bytes(&self) -> Vec<u8> {
-        self.length
-            .to_be_bytes()
-            .iter()
-            .chain(self.chunk_type.bytes().iter())
-            .chain(self.data.iter())
-            .chain(self.crc.to_be_bytes().iter())
-            .copied()
-            .collect()
+        [
+            &self.length.to_be_bytes(),
+            &self.chunk_type.bytes(),
+            &self.data[..],
+            &self.crc.to_be_bytes(),
+        ]
+        .concat()
     }
 }
 

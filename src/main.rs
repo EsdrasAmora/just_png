@@ -1,9 +1,9 @@
-#![allow(dead_code, unused_imports, unused_variables)]
+#![allow(dead_code, unused_variables)]
 
-use commands::Cli;
-mod args;
+use cli::Cli;
 mod chunk;
 mod chunk_type;
+mod cli;
 mod commands;
 mod png;
 

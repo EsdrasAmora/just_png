@@ -1,10 +1,7 @@
-use crate::{
-    chunk::{self, Chunk},
-    chunk_type::ChunkType,
-};
-use anyhow::{bail, ensure, Context, Error};
-use core::result::Result::{Err, Ok};
-use std::fmt::{self, format};
+use crate::{chunk::Chunk, chunk_type::ChunkType};
+use anyhow::{ensure, Context};
+use core::result::Result::Ok;
+use std::fmt;
 
 #[derive(Debug)]
 pub struct Png(Vec<Chunk>);
@@ -90,9 +87,7 @@ mod tests {
     use super::*;
     use crate::chunk::Chunk;
     use crate::chunk_type::ChunkType;
-    use core::panic;
     use std::convert::TryFrom;
-    use std::str::FromStr;
 
     fn testing_chunks() -> Vec<Chunk> {
         let mut chunks = Vec::new();

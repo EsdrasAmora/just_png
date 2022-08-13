@@ -1,169 +1,136 @@
-use std::fs::OpenOptions;
+use crate::{chunk::Chunk, png::Png};
+use anyhow::{bail, ensure, Context};
+use clap::Args;
+use std::{
+    ffi::OsString,
+    fs::{self, OpenOptions},
+    io::{ErrorKind, Write},
+    path::PathBuf,
+};
 
-use anyhow::Context;
-use clap::{Args, Parser, Subcommand};
+#[derive(Args, Debug)]
+pub(crate) struct Encode {
+    #[clap(value_parser)]
+    path: String,
 
-use crate::args::{Decode, Encode, Print, Remove};
+    #[clap(value_parser)]
+    chunk_type: String,
 
-#[derive(Parser)]
-#[clap(
-    author = "Esdras Amora",
-    version = "0.0.1",
-    about,
-    propagate_version = true
-)]
-/// hide secret secret messages inside a png
-pub(crate) struct Cli {
-    #[clap(subcommand)]
-    command: Commands,
+    #[clap(value_parser)]
+    message: String,
+
+    #[clap(value_parser)]
+    output: Option<String>,
 }
 
-impl Cli {
-    pub fn run() -> Result<(), anyhow::Error> {
-        let cli = Cli::parse();
-        cli.command.delegate()
+#[derive(Args, Debug)]
+pub(crate) struct Decode {
+    #[clap(value_parser)]
+    path: String,
+
+    #[clap(value_parser)]
+    chunk_type: String,
+}
+
+#[derive(Args, Debug)]
+pub(crate) struct Remove {
+    #[clap(value_parser)]
+    path: String,
+
+    #[clap(value_parser)]
+    chunk_type: String,
+}
+
+#[derive(Args, Debug)]
+pub(crate) struct Print {
+    #[clap(value_parser)]
+    path: String,
+}
+
+impl Encode {
+    pub(crate) fn exec(self) -> Result<(), anyhow::Error> {
+        let file = fs::read(&self.path)?;
+
+        let mut png: Png = file.as_slice().try_into()?;
+        let new_chunk: Chunk = Chunk::new(
+            self.chunk_type.as_bytes().try_into()?,
+            self.message.as_str().into(),
+        );
+        png.append_chunk(new_chunk);
+
+        self.handle_write_file(&png.as_bytes())?;
+
+        Ok(())
     }
-}
 
-#[derive(Subcommand)]
-enum Commands {
-    Encode(Encode),
-    Decode(Decode),
-    Remove(Remove),
-    Print(Print),
-}
+    fn handle_write_file(&self, content: &[u8]) -> Result<(), anyhow::Error> {
+        let mut max_retries = 10;
+        let mut filename = PathBuf::from(self.output.as_ref().unwrap_or(&self.path));
+        let stem: OsString = filename.file_stem().context("empty file name")?.into();
+        let extension: OsString = filename
+            .extension()
+            .context("invalid file format: file does not contain a extension")?
+            .into();
 
-impl Commands {
-    fn delegate(self) -> Result<(), anyhow::Error> {
-        match self {
-            Commands::Encode(args) => args.exec(),
-            Commands::Decode(args) => args.exec(),
-            Commands::Remove(args) => args.exec(),
-            Commands::Print(args) => args.exec(),
-        }
-    }
-}
+        ensure!(
+            extension == "png",
+            "invalid file format: file must be a png"
+        );
 
-mod impls {
-    use std::{
-        borrow::Borrow,
-        ffi::OsStr,
-        fmt::format,
-        fs,
-        io::{ErrorKind, Write},
-        path::{Path, PathBuf},
-    };
-
-    use anyhow::{bail, ensure};
-
-    use super::*;
-    use crate::{
-        chunk::{self, Chunk},
-        png::{self, Png},
-    };
-
-    impl Encode {
-        pub(crate) fn exec(self) -> Result<(), anyhow::Error> {
-            let a = fs::read("/Users/taqtile/Downloads/rustacean-flat-gesture.png")?;
-
-            let mut png: Png = a.as_slice().try_into()?;
-            let new_chunk: Chunk =
-                Chunk::new("ruSt".try_into()?, "This is a secret message".into());
-            png.append_chunk(new_chunk);
-
-            let mut file = match OpenOptions::new()
+        let max_size = filename.capacity() + "(10)".len();
+        loop {
+            match OpenOptions::new()
                 .write(true)
                 .create_new(true)
-                .open("/Users/taqtile/Downloads/rustacean-flat-gesture(1).png")
+                .open(&filename)//"/Users/taqtile/Downloads/rustacean-flat-gesture(1).png"
             {
-                Ok(file) => file,
-                Err(ref err) if err.kind() == ErrorKind::AlreadyExists => {
-                    bail!("file already exists")
-                }
-                Err(e) => panic!("Can't read from file: {}, err {}", "filenametodo", e),
-            };
-
-            let write = file.write_all(&png.as_bytes())?;
-
-            Ok(())
-        }
-
-        fn handle_write_file<P: AsRef<Path>>(
-            filename: P,
-            content: &[u8],
-        ) -> Result<(), anyhow::Error> {
-            let mut max_retries = 10;
-            let mut filename = filename.as_ref().to_owned();
-            let stem: PathBuf = filename.file_stem().context("invalid file path")?.into();
-            let extension: PathBuf = filename
-                .extension()
-                .context("invalid file format: file does not contain a extension")?
-                .into();
-
-            ensure!(
-                extension.as_os_str() == "png",
-                "invalid file format: file must be a png"
-            );
-            loop {
-                // match OpenOptions::new()
-                //     .write(true)
-                //     .create_new(true)
-                //     .open("/Users/taqtile/Downloads/rustacean-flat-gesture(1).png")
-                // {
-                //     Ok(mut file) => {
-                //         file.write_all(content)?;
-                //         break;
-                //     }
-                //     Err(ref err) if err.kind() == ErrorKind::AlreadyExists => {
-                //         bail!("file {:?} already exists", filename.as_os_str())
-                //     }
-                //     Err(e) => {
-                //         return Err(e).context(format!(
-                //             "something wrent wrong wile trying to open the file {:?}",
-                //             filename.as_os_str()
-                //         ))
-                //     }
-                // };
-                if let Ok(mut file) = OpenOptions::new()
-                    .write(true)
-                    .create_new(true)
-                    .open(&filename)
-                {
+                Ok(mut file) => {
                     file.write_all(content)?;
                     break;
                 }
-                max_retries -= 1;
-                if max_retries == 0 {
-                    break;
+                Err(ref err) if err.kind() == ErrorKind::AlreadyExists => {
+                    max_retries -= 1;
+
+                    if max_retries == 0 {
+                        bail!("could not write result to file")
+                    }
+
+                    let mut temp = OsString::with_capacity(max_size);
+                    temp.push(&stem);
+                    temp.push(format!("({})", 10 - max_retries));
+                    temp.push(".");
+                    temp.push(&extension);
+                    filename = temp.into();
                 }
-
-                filename = stem
-                    .join(format!("({}) ", 10 - max_retries))
-                    .join(".")
-                    .join(&extension);
-            }
-            println!("written result to file {:?}", filename);
-            Ok(())
+                Err(e) => {
+                    return Err(e).context(format!(
+                        "something wrent wrong wile trying to create the file {:?}",
+                        filename.as_os_str()
+                    ))
+                }
+            };
         }
+        println!("written result to file {:?}", filename);
+        Ok(())
     }
-    impl Decode {
-        pub(crate) fn exec(self) -> Result<(), anyhow::Error> {
-            println!("you runned the command Decode with args {:?}", self);
-            Ok(())
-        }
+}
+impl Decode {
+    pub(crate) fn exec(self) -> Result<(), anyhow::Error> {
+        println!("you runned the command Decode with args {:?}", self);
+        Ok(())
     }
+}
 
-    impl Remove {
-        pub(crate) fn exec(self) -> Result<(), anyhow::Error> {
-            println!("you runned the command Remove with args {:?}", self);
-            Ok(())
-        }
+impl Remove {
+    pub(crate) fn exec(self) -> Result<(), anyhow::Error> {
+        println!("you runned the command Remove with args {:?}", self);
+        Ok(())
     }
+}
 
-    impl Print {
-        pub(crate) fn exec(self) -> Result<(), anyhow::Error> {
-            println!("you runned the command Print with args {:?}", self);
-            Ok(())
-        }
+impl Print {
+    pub(crate) fn exec(self) -> Result<(), anyhow::Error> {
+        println!("you runned the command Print with args {:?}", self);
+        Ok(())
     }
 }
