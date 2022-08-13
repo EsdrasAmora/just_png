@@ -36,7 +36,7 @@ impl Png {
     fn chunk_by_type_tuple(&self, chunk_type: &str) -> Option<(usize, &Chunk)> {
         todo!()
     }
-    fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
+    pub(crate) fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
         self.0
             .iter()
             .find(|x| x.chunk_type().bytes() == chunk_type.as_bytes())

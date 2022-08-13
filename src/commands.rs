@@ -116,7 +116,21 @@ impl Encode {
 }
 impl Decode {
     pub(crate) fn exec(self) -> Result<(), anyhow::Error> {
-        println!("you runned the command Decode with args {:?}", self);
+        let file = fs::read(&self.path)?;
+
+        let png: Png = file.as_slice().try_into()?;
+
+        let chunk = png
+            .chunk_by_type(&self.chunk_type)
+            .context(format!("no secret message with type {}", &self.chunk_type))?;
+
+        println!(
+            "your secret message is: {}",
+            chunk
+                .data_as_string()
+                .context("this type does not contain a valid message")?
+        );
+
         Ok(())
     }
 }
