@@ -30,11 +30,8 @@ impl Png {
     fn header(&self) -> &[u8; 8] {
         Png::STANDARD_HEADER
     }
-    fn chunks(&self) -> &[Chunk] {
+    pub(crate) fn chunks(&self) -> &[Chunk] {
         &self.0
-    }
-    fn chunk_by_type_tuple(&self, chunk_type: &str) -> Option<(usize, &Chunk)> {
-        todo!()
     }
     pub(crate) fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
         self.0

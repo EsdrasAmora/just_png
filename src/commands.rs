@@ -169,7 +169,32 @@ impl Remove {
 
 impl Print {
     pub(crate) fn exec(self) -> Result<(), anyhow::Error> {
-        println!("you runned the command Print with args {:?}", self);
+        let file = fs::read(&self.path)?;
+
+        let png: Png = file.as_slice().try_into()?;
+
+        let chunks = png.chunks();
+
+        let chunk_types: Vec<_> = chunks
+            .iter()
+            .filter_map(|chunk| {
+                chunk
+                    .data_as_string()
+                    .ok()
+                    .and_then(|msg| if msg.len() != 0 { Some(msg) } else { None })
+                    .and(Some(chunk.chunk_type()))
+            })
+            .collect();
+
+        if chunk_types.len() > 0 {
+            println!("You can try one these chunk types:");
+            for chunk_type in chunk_types {
+                println!("  {}", chunk_type);
+            }
+        } else {
+            println!("no messages in this png")
+        }
+
         Ok(())
     }
 }
