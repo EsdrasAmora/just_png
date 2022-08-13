@@ -82,7 +82,7 @@ impl Encode {
             match OpenOptions::new()
                 .write(true)
                 .create_new(true)
-                .open(&filename)//"/Users/taqtile/Downloads/rustacean-flat-gesture(1).png"
+                .open(&filename)
             {
                 Ok(mut file) => {
                     file.write_all(content)?;
@@ -137,7 +137,32 @@ impl Decode {
 
 impl Remove {
     pub(crate) fn exec(self) -> Result<(), anyhow::Error> {
-        println!("you runned the command Remove with args {:?}", self);
+        let file = fs::read(&self.path)?;
+
+        let mut png: Png = file.as_slice().try_into()?;
+
+        let chunk = png
+            .remove_chunk(&self.chunk_type)
+            .context(format!("no secret message with type {}", &self.chunk_type))?;
+
+        if let Ok(mut file) = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&self.path)
+        {
+            file.write_all(&png.as_bytes())?
+        }
+
+        println!(
+            "your secret message is: {}",
+            chunk
+                .data_as_string()
+                .context("this type does not contain a valid message")?
+        );
+
+        println!("message deleted successfully");
+
         Ok(())
     }
 }

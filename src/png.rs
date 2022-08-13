@@ -15,7 +15,7 @@ impl Png {
     pub(crate) fn append_chunk(&mut self, chunk: Chunk) {
         self.0.push(chunk);
     }
-    fn remove_chunk(&mut self, chunk_type: &str) -> anyhow::Result<Chunk> {
+    pub(crate) fn remove_chunk(&mut self, chunk_type: &str) -> anyhow::Result<Chunk> {
         let chunk_type = TryInto::<ChunkType>::try_into(chunk_type)?;
 
         let index = self
