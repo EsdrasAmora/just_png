@@ -4,8 +4,9 @@ use crate::{
 };
 use anyhow::{bail, ensure, Context, Error};
 use core::result::Result::{Err, Ok};
-use std::fmt;
+use std::fmt::{self, format};
 
+#[derive(Debug)]
 pub struct Png(Vec<Chunk>);
 
 impl Png {
@@ -14,7 +15,7 @@ impl Png {
     fn from_chunks(chunks: Vec<Chunk>) -> Png {
         Png(chunks.into())
     }
-    fn append_chunk(&mut self, chunk: Chunk) {
+    pub(crate) fn append_chunk(&mut self, chunk: Chunk) {
         self.0.push(chunk);
     }
     fn remove_chunk(&mut self, chunk_type: &str) -> anyhow::Result<Chunk> {
@@ -43,7 +44,7 @@ impl Png {
             .iter()
             .find(|x| x.chunk_type().bytes() == chunk_type.as_bytes())
     }
-    fn as_bytes(&self) -> Vec<u8> {
+    pub(crate) fn as_bytes(&self) -> Vec<u8> {
         let chunk_bytes: Vec<u8> = self.0.iter().flat_map(|chunk| chunk.as_bytes()).collect();
 
         [Png::STANDARD_HEADER.to_vec(), chunk_bytes].concat()
@@ -78,9 +79,8 @@ impl TryFrom<&[u8]> for Png {
 
 impl fmt::Display for Png {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for el in self.chunks().iter() {
-            write!(f, "{}", el)?;
-        }
+        let result: String = self.chunks().iter().map(|it| format!("{}\n", it)).collect();
+        write!(f, "{}", result)?;
         Ok(())
     }
 }

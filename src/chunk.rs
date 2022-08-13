@@ -88,8 +88,11 @@ impl fmt::Display for Chunk {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Length: {} \nType: {} \nCrc: {} \nData: {:?} \n",
-            self.length, self.chunk_type, self.crc, self.data
+            "Length: {} | Type: {} | Crc: {} | Data Size: {:?} ",
+            self.length,
+            self.chunk_type,
+            self.crc,
+            self.data.len()
         )
     }
 }

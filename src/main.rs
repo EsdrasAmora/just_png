@@ -7,6 +7,6 @@ mod chunk_type;
 mod commands;
 mod png;
 
-fn main() {
-    Cli::run();
+fn main() -> Result<(), anyhow::Error> {
+    Cli::run()
 }
