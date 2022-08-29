@@ -8,39 +8,51 @@ use std::{
     path::PathBuf,
 };
 
+/// Encode `message` into file in `path`
 #[derive(Args, Debug)]
 pub(crate) struct Encode {
+    /// path to the file that the message will be encoded with (needs to be a png)
     #[clap(value_parser)]
     path: String,
 
+    /// key of 4 alphabets where the message will be located
     #[clap(value_parser)]
     chunk_type: String,
 
+    /// message to be encoded
     #[clap(value_parser)]
     message: String,
 
+    /// path to the new png file with the message
     #[clap(value_parser)]
     output: Option<String>,
 }
 
+/// Reads message at file `path` on the key `chunk_type`
 #[derive(Args, Debug)]
 pub(crate) struct Decode {
+    /// path to png file with message (needs to be a png)
     #[clap(value_parser)]
     path: String,
 
+    /// key of 4 alphabets where the message is located
     #[clap(value_parser)]
     chunk_type: String,
 }
 
+/// Removes message at file `path` on the key `chunk_type`
 #[derive(Args, Debug)]
 pub(crate) struct Remove {
+    /// path to png file with message (needs to be a png)
     #[clap(value_parser)]
     path: String,
 
+    /// key of 4 alphabets where the message is located
     #[clap(value_parser)]
     chunk_type: String,
 }
 
+/// Print all utf-8 encodable chunk types to stdout
 #[derive(Args, Debug)]
 pub(crate) struct Print {
     #[clap(value_parser)]

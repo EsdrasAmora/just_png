@@ -1,6 +1,7 @@
 use crate::commands::{Decode, Encode, Print, Remove};
 use clap::{Parser, Subcommand};
 
+/// hide messages in PNGs
 #[derive(Parser)]
 #[clap(
     author = "Esdras Amora",
@@ -8,7 +9,6 @@ use clap::{Parser, Subcommand};
     about,
     propagate_version = true
 )]
-/// hide secret secret messages inside a png
 pub(crate) struct Cli {
     #[clap(subcommand)]
     command: Commands,
